@@ -1,0 +1,20 @@
+{
+  "name": "@medimind/database",
+  "private": true,
+  "version": "0.1.0",
+  "main": "index.js",
+  "scripts": {
+    "setup": "node setup.js",
+    "seed": "node seed.js",
+    "explain": "node explain.js",
+    "aggregations": "node aggregations/run-all.js",
+    "backup": "node backup.js",
+    "restore:verify": "node restore-verify.js"
+  },
+  "dependencies": {
+    "@faker-js/faker": "^9.0.0",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5",
+    "mongodb": "^6.9.0"
+  }
+}
