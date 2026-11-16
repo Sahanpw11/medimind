@@ -1,0 +1,93 @@
+PASS tests/api.test.js
+  auth
+    ✓ registers a patient and ignores a client-supplied role (298 ms)
+    ✓ rejects duplicate email with 409 (261 ms)
+    ✓ rejects weak password / missing fields with 400 and field details (2 ms)
+    ✓ login succeeds with correct credentials (253 ms)
+    ✓ login rejects invalid credentials with 401 (257 ms)
+    ✓ protected routes require a token; tampered token is rejected (3 ms)
+  patients & authorization
+    ✓ patient updates own profile (5 ms)
+    ✓ cross-patient read and write are denied (403) (2 ms)
+    ✓ profile update validates input and strips unknown fields (4 ms)
+    ✓ admin cannot open patient detail (no blanket clinical access)
+  patient onboarding flag
+    ✓ new registrations start with onboarding pending; completing it is one-way (250 ms)
+    ✓ seeded patients are not forced through onboarding (1 ms)
+  doctors
+    ✓ search, filter, sort and paginate with safe limits (5 ms)
+    ✓ operator-injection style query is rejected, regex is escaped (3 ms)
+    ✓ only admins may create doctors (1 ms)
+  appointments
+    ✓ books an available slot (201) and the slot becomes taken (10 ms)
+    ✓ a conflicting booking is rejected with 409 (4 ms)
+    ✓ invalid dates and missing fields are rejected (5 ms)
+    ✓ doctors and admins cannot book on behalf of patients
+    ✓ doctor lists only their own appointments; patient only theirs (14 ms)
+    ✓ admin list hides free-text reason (3 ms)
+    ✓ another patient cannot cancel someone else's appointment (1 ms)
+    ✓ reschedule moves the reservation; cancel frees the slot (18 ms)
+  medical records
+    ✓ doctor with a relationship creates a record; without one gets 403 (7 ms)
+    ✓ patients cannot create records; invalid payload is 400 (1 ms)
+    ✓ history: owner OK, other patient 403, admin 403, assigned doctor OK (9 ms)
+    ✓ clinical reads are written to the audit log (1 ms)
+  documents
+    ✓ uploads a PDF, stores metadata + checksum, retrieves via controlled endpoint (16 ms)
+    ✓ another patient cannot download it (403) (1 ms)
+    ✓ rejects disguised executables, oversize files and missing files (8 ms)
+    ✓ lists metadata without exposing storage keys (5 ms)
+  AI proxy
+    ✓ returns a safe fallback with disclaimer when the AI service is down (11 ms)
+    ✓ validates input and restricts role (2 ms)
+  chat history
+    ✓ each chat is kept separately, listed newest first, scoped to its owner, and deletable (40 ms)
+    ✓ chat history is patient-only (1 ms)
+  analytics
+    ✓ admin overview matches independent control totals (44 ms)
+    ✓ non-admins are forbidden (1 ms)
+  doctor dashboard
+    ✓ is scoped to the signed-in doctor and matches independent control totals (6 ms)
+    ✓ patients and admins are forbidden (2 ms)
+  patient and admin dashboards
+    ✓ patient dashboard is scoped to the patient and matches control totals (3 ms)
+    ✓ patient dashboard is patient-only (1 ms)
+    ✓ admin operations match control totals and expose no patient details (8 ms)
+  notifications
+    ✓ booking notifies both the patient and the doctor; each sees only their own (6 ms)
+    ✓ marking read clears the unread count; unauthenticated is 401 (3 ms)
+  CRUD completion: doctors, appointments, medical records, documents
+    ✓ doctors: admin creates, reads, updates and deletes; history blocks deletion; others are forbidden (273 ms)
+    ✓ appointments: admin can delete only a cancelled appointment (14 ms)
+    ✓ medical records: only the authoring doctor can update or delete (18 ms)
+    ✓ documents: owner renames and deletes; the stored bytes are removed too; others are forbidden (30 ms)
+  allergy search (brief Query C)
+    ✓ a doctor finds only their own patients with the allergy; validation and roles enforced (10 ms)
+  error handling
+    ✓ an internal failure returns 500 with a generic message and no stack trace (2 ms)
+    ✓ unknown routes return 404 JSON and malformed JSON returns 400 (2 ms)
+  validators at the database layer
+    ✓ MongoDB JSON Schema rejects an invalid appointment status even if the API is bypassed (2 ms)
+    ✓ unique email index is enforced (1 ms)
+
+PASS tests/unit.test.js
+  validateSlot (booking rules)
+    ✓ accepts an aligned slot inside the doctor's hours
+    ✓ rejects a slot not a date (3 ms)
+    ✓ rejects a slot in the past
+    ✓ rejects a slot more than 180 days ahead
+    ✓ rejects a slot not on a 30-minute boundary
+    ✓ rejects a slot with seconds
+    ✓ rejects a slot on a day the doctor does not work (1 ms)
+    ✓ rejects a slot before opening
+    ✓ rejects a slot whose 30 minutes would run past closing
+    ✓ rejects a slot exactly at closing time
+  sniff (upload content check)
+    ✓ recognises real file signatures regardless of the claimed type
+    ✓ rejects executables, binary data and invalid UTF-8
+
+Test Suites: 2 passed, 2 total
+Tests:       65 passed, 65 total
+Snapshots:   0 total
+Time:        3.068 s
+Ran all test suites.

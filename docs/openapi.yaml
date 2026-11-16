@@ -1,0 +1,247 @@
+openapi: 3.0.3
+info:
+  title: MediMind API
+  version: 1.0.0
+  description: |
+    Educational healthcare platform API. **Synthetic data only. Not medical advice.**
+    Authentication uses httpOnly cookies set by `/api/auth/login` (a `Authorization: Bearer <JWT>` header is also accepted, which is convenient for Postman).
+    Roles are assigned by the server, never taken from request bodies.
+    Pagination: `page` (default 1) and `limit` (default 20, max 100). List responses use `{data, page, limit, total, pages}`.
+servers:
+  - url: http://localhost:5173
+    description: Local (Vite proxies /api to the Express server on :4000)
+tags: [{name: Auth}, {name: Patients}, {name: Doctors}, {name: Appointments}, {name: Records}, {name: Documents}, {name: AI}, {name: Analytics}, {name: Notifications}]
+components:
+  securitySchemes:
+    cookieAuth: {type: apiKey, in: cookie, name: mm_at}
+    bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: {type: string}
+        details:
+          type: array
+          items: {type: object, properties: {field: {type: string}, message: {type: string}}}
+      example: {error: Validation failed, details: [{field: password, message: Password must be at least 8 characters}]}
+    ObjectId: {type: string, pattern: '^[a-f0-9]{24}$', example: 6650f1c2a1b2c3d4e5f60718}
+    User:
+      type: object
+      properties:
+        id: {$ref: '#/components/schemas/ObjectId'}
+        email: {type: string, format: email}
+        role: {type: string, enum: [patient, doctor, admin]}
+        profileId: {type: string, nullable: true}
+    Appointment:
+      type: object
+      properties:
+        _id: {$ref: '#/components/schemas/ObjectId'}
+        patientId: {$ref: '#/components/schemas/ObjectId'}
+        doctorId: {$ref: '#/components/schemas/ObjectId'}
+        startAt: {type: string, format: date-time}
+        endAt: {type: string, format: date-time}
+        status: {type: string, enum: [booked, confirmed, completed, cancelled, no_show]}
+        consultationType: {type: string, enum: [online, in_person]}
+        reason: {type: string}
+    PageMeta:
+      type: object
+      properties: {page: {type: integer}, limit: {type: integer}, total: {type: integer}, pages: {type: integer}}
+  responses:
+    BadRequest: {description: Validation failed, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+    Unauthorized: {description: Missing, expired or invalid session, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}, example: {error: Authentication required}}}}
+    Forbidden: {description: Authenticated but not allowed, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}, example: {error: You do not have access to this resource}}}}
+    NotFound: {description: Not found, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+    Conflict: {description: Conflict, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}, example: {error: That time slot has just been taken. Please choose another.}}}}
+security: [{cookieAuth: []}, {bearerAuth: []}]
+paths:
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Register a patient (role is always `patient`)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, fullName, dateOfBirth]
+              properties:
+                email: {type: string, format: email}
+                password: {type: string, minLength: 8, description: Needs a letter and a number}
+                fullName: {type: string}
+                dateOfBirth: {type: string, format: date}
+            example: {email: nimal@example.test, password: Passw0rd!x, fullName: Nimal Perera, dateOfBirth: '1995-04-12'}
+      responses:
+        '201': {description: Created; sets session cookies, content: {application/json: {example: {user: {id: 6650f1c2a1b2c3d4e5f60718, email: nimal@example.test, role: patient, profileId: 6650f1c2a1b2c3d4e5f60719}}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Authenticate; returns user and sets a 15-minute access cookie and a 7-day refresh cookie
+      requestBody: {required: true, content: {application/json: {example: {email: patient@demo.test, password: Demo@12345}}}}
+      responses:
+        '200': {description: OK, content: {application/json: {schema: {type: object, properties: {user: {$ref: '#/components/schemas/User'}}}}}}
+        '401': {description: Invalid email or password, content: {application/json: {example: {error: Invalid email or password}}}}
+  /api/auth/refresh: {post: {tags: [Auth], security: [], summary: Issue a new access token from the refresh cookie, responses: {'200': {description: OK}, '401': {$ref: '#/components/responses/Unauthorized'}}}}
+  /api/auth/logout: {post: {tags: [Auth], security: [], summary: Clear session cookies, responses: {'204': {description: Signed out}}}}
+  /api/auth/me: {get: {tags: [Auth], summary: Current user, responses: {'200': {description: OK}, '401': {$ref: '#/components/responses/Unauthorized'}}}}
+  /api/patients:
+    get:
+      tags: [Patients]
+      summary: Doctors - patients with a given allergy (brief Query C, `$elemMatch` on the embedded allergies array, served by the multikey index). Limited to patients the doctor has an appointment with.
+      parameters:
+        - {name: allergy, in: query, required: true, schema: {type: string, maxLength: 60}, description: Case-insensitive exact substance, example Penicillin}
+        - {name: page, in: query, schema: {type: integer, default: 1}}
+        - {name: limit, in: query, schema: {type: integer, default: 20, maximum: 100}}
+      responses: {'200': {description: Page of patients (id, name, date of birth, allergies)}, '400': {$ref: '#/components/responses/BadRequest'}, '403': {$ref: '#/components/responses/Forbidden'}}
+  /api/patients/{id}:
+    parameters: [{name: id, in: path, required: true, schema: {$ref: '#/components/schemas/ObjectId'}}]
+    get:
+      tags: [Patients]
+      summary: Patient detail. A patient sees only themselves; a doctor only patients they have an appointment with; admins are refused.
+      responses: {'200': {description: OK}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+    put:
+      tags: [Patients]
+      summary: Update own profile (allow-listed fields only; unknown fields are stripped). `onboardingDone` may only be set to true (it marks the first-login welcome flow as finished) and can never be reset.
+      requestBody: {required: true, content: {application/json: {example: {allergies: [{substance: Penicillin, severity: Moderate}], emergencyContact: {name: Kamal Perera, relationship: Brother}}}}}
+      responses: {'200': {description: Updated profile}, '400': {$ref: '#/components/responses/BadRequest'}, '403': {$ref: '#/components/responses/Forbidden'}}
+  /api/doctors:
+    get:
+      tags: [Doctors]
+      summary: Search, filter and paginate doctors
+      parameters:
+        - {name: q, in: query, schema: {type: string, maxLength: 60}, description: Name or specialty (regex-escaped)}
+        - {name: specialty, in: query, schema: {type: string}}
+        - {name: sort, in: query, schema: {type: string, enum: [name, specialty], default: name}}
+        - {name: page, in: query, schema: {type: integer, default: 1}}
+        - {name: limit, in: query, schema: {type: integer, default: 20, maximum: 100}}
+      responses: {'200': {description: Page of doctors}, '400': {$ref: '#/components/responses/BadRequest'}}
+    post: {tags: [Doctors], summary: Admin - create a doctor and login, responses: {'201': {description: Created}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}}}
+  /api/doctors/specialties: {get: {tags: [Doctors], summary: Distinct specialties, responses: {'200': {description: OK}}}}
+  /api/doctors/{id}:
+    parameters: [{name: id, in: path, required: true, schema: {$ref: '#/components/schemas/ObjectId'}}]
+    get: {tags: [Doctors], summary: Doctor detail, responses: {'200': {description: OK}, '404': {$ref: '#/components/responses/NotFound'}}}
+    put: {tags: [Doctors], summary: Admin - update name/specialty/availability, responses: {'200': {description: OK}, '403': {$ref: '#/components/responses/Forbidden'}}}
+    delete:
+      tags: [Doctors]
+      summary: Admin - delete a doctor and their login, in one transaction. Refused (409) when the doctor has any appointment history, because appointments and records reference them.
+      responses: {'204': {description: Deleted}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}, '409': {$ref: '#/components/responses/Conflict'}}
+  /api/doctors/{id}/slots:
+    get:
+      tags: [Doctors]
+      summary: 30-minute slots for a UTC day with status available | taken | past
+      parameters: [{name: id, in: path, required: true, schema: {type: string}}, {name: date, in: query, required: true, schema: {type: string, format: date}}]
+      responses:
+        '200': {description: OK, content: {application/json: {example: {date: '2026-12-01', slots: [{startAt: '2026-12-01T09:00:00.000Z', endAt: '2026-12-01T09:30:00.000Z', status: available}]}}}}
+  /api/appointments:
+    post:
+      tags: [Appointments]
+      summary: Book a conflict-free appointment (patients only). Runs in a MongoDB transaction.
+      requestBody: {required: true, content: {application/json: {example: {doctorId: 6650f1c2a1b2c3d4e5f60718, startAt: '2026-12-01T09:30:00Z', consultationType: online, reason: Routine checkup}}}}
+      responses: {'201': {description: Booked}, '400': {$ref: '#/components/responses/BadRequest'}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}}
+    get:
+      tags: [Appointments]
+      summary: Role-filtered list (patient = own, doctor = assigned, admin = all without free-text reason)
+      parameters:
+        - {name: status, in: query, schema: {type: string, enum: [booked, confirmed, completed, cancelled, no_show]}}
+        - {name: from, in: query, schema: {type: string, format: date-time}}
+        - {name: to, in: query, schema: {type: string, format: date-time}}
+        - {name: sort, in: query, schema: {type: string, enum: [startAt, '-startAt'], default: '-startAt'}}
+        - {name: page, in: query, schema: {type: integer}}
+        - {name: limit, in: query, schema: {type: integer, maximum: 100}}
+      responses: {'200': {description: Page of appointments}}
+  /api/appointments/{id}:
+    patch:
+      tags: [Appointments]
+      summary: Change status or reschedule (exactly one of `status`, `startAt`). Patients may cancel/reschedule own; doctors may confirm/complete/no-show/cancel assigned.
+      parameters: [{name: id, in: path, required: true, schema: {type: string}}]
+      requestBody: {required: true, content: {application/json: {examples: {cancel: {value: {status: cancelled}}, reschedule: {value: {startAt: '2026-12-02T10:00:00Z'}}}}}}
+      responses: {'200': {description: Updated}, '400': {$ref: '#/components/responses/BadRequest'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}, '409': {$ref: '#/components/responses/Conflict'}}
+    delete:
+      tags: [Appointments]
+      summary: Admin - delete an appointment. Only a cancelled appointment can be removed (400 otherwise).
+      parameters: [{name: id, in: path, required: true, schema: {type: string}}]
+      responses: {'204': {description: Deleted}, '400': {$ref: '#/components/responses/BadRequest'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+  /api/medical-records:
+    post: {tags: [Records], summary: Doctor creates a visit record for a patient they have an appointment with, responses: {'201': {description: Created}, '400': {$ref: '#/components/responses/BadRequest'}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /api/medical-records/patient/{id}:
+    get:
+      tags: [Records]
+      summary: Medical history (owner or related doctor; admins refused). Each read is audit-logged.
+      parameters: [{name: id, in: path, required: true, schema: {type: string}}, {name: page, in: query, schema: {type: integer}}, {name: limit, in: query, schema: {type: integer}}]
+      responses: {'200': {description: OK}, '403': {$ref: '#/components/responses/Forbidden'}}
+  /api/documents:
+    post:
+      tags: [Documents]
+      summary: Upload a synthetic document (PDF, PNG, JPEG, text; max 4 MB; content sniffed, not just declared type)
+      requestBody: {required: true, content: {multipart/form-data: {schema: {type: object, properties: {file: {type: string, format: binary}, patientId: {type: string, description: Doctors only}}}}}}
+      responses: {'201': {description: Stored in GridFS; metadata returned (no storage key)}, '400': {$ref: '#/components/responses/BadRequest'}, '403': {$ref: '#/components/responses/Forbidden'}}
+    get: {tags: [Documents], summary: List document metadata, responses: {'200': {description: OK}}}
+  /api/documents/{id}/download: {get: {tags: [Documents], summary: Controlled retrieval after an ownership check (private, no-store), parameters: [{name: id, in: path, required: true, schema: {type: string}}], responses: {'200': {description: File stream}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}}}
+  /api/ai/chat:
+    post:
+      tags: [AI]
+      summary: Educational assistant (patients). Proxies to the internal FastAPI service with a 5 s timeout; returns a safe fallback with `degraded:true` if unavailable.
+      requestBody: {required: true, content: {application/json: {example: {question: What is a routine checkup?, sessionId: default}}}}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              example: {answer: 'Here is some general educational information. A routine checkup is a regular visit ...', sources: ['EDU-01: Routine checkups'], disclaimer: Educational information only. This is not medical advice., emergency: null, mode: answer, degraded: false}
+        '400': {$ref: '#/components/responses/BadRequest'}
+  /api/ai/history: {get: {tags: [AI], summary: Conversation history for a session, parameters: [{name: sessionId, in: query, schema: {type: string}}], responses: {'200': {description: OK}}}}
+  /api/ai/no-show-risk: {post: {tags: [AI], summary: Doctors/admins - simulated no-show risk for an appointment, responses: {'200': {description: '{riskScore, riskBand, modelVersion}'}, '503': {description: Prediction service unavailable}}}}
+  /api/analytics/overview:
+    get:
+      tags: [Analytics]
+      summary: Admin dashboard metrics computed with MongoDB aggregation pipelines ($facet, $group, $lookup, $unwind, $bucket)
+      parameters: [{name: from, in: query, schema: {type: string, format: date-time}}, {name: to, in: query, schema: {type: string, format: date-time}}]
+      responses: {'200': {description: Aggregates only; no clinical notes or patient identifiers}, '403': {$ref: '#/components/responses/Forbidden'}}
+  /api/medical-records/{id}:
+    parameters: [{name: id, in: path, required: true, schema: {$ref: '#/components/schemas/ObjectId'}}]
+    put:
+      tags: [Records]
+      summary: Update a visit record. Only the authoring doctor (403 otherwise). Audit-logged.
+      requestBody: {required: true, content: {application/json: {example: {notes: Follow-up booked, followUpRequired: true}}}}
+      responses: {'200': {description: Updated record}, '400': {$ref: '#/components/responses/BadRequest'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+    delete:
+      tags: [Records]
+      summary: Delete a visit record. Only the authoring doctor. Audit-logged.
+      responses: {'204': {description: Deleted}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+  /api/documents/{id}:
+    parameters: [{name: id, in: path, required: true, schema: {$ref: '#/components/schemas/ObjectId'}}]
+    put:
+      tags: [Documents]
+      summary: Rename a document (the uploader or the owning patient)
+      requestBody: {required: true, content: {application/json: {example: {filename: lab-results.pdf}}}}
+      responses: {'200': {description: Updated metadata}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+    delete:
+      tags: [Documents]
+      summary: Delete the metadata and the stored GridFS bytes together (the uploader or the owning patient)
+      responses: {'204': {description: Deleted}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}}
+  /api/notifications:
+    get:
+      tags: [Notifications]
+      summary: The signed-in user's 10 latest notifications and unread count. Booking notifies both the patient and the doctor.
+      responses:
+        '200':
+          description: OK
+          content: {application/json: {example: {unread: 1, data: [{_id: 6650f1c2a1b2c3d4e5f60730, type: appointment_booked, status: unread, message: Appointment booked with Dr. Carley Streich., createdAt: '2026-11-17T09:12:00.000Z'}]}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /api/notifications/read:
+    post: {tags: [Notifications], summary: Mark all of the user's notifications as read, responses: {'200': {description: '{updated: n}'}, '401': {$ref: '#/components/responses/Unauthorized'}}}
+  /api/analytics/doctor:
+    get: {tags: [Analytics], summary: 'Doctor dashboard from one $facet pipeline: today agenda, awaiting confirmation, next-7-day load, 14-day workload, 90-day outcomes. Scoped to the signed-in doctor.', responses: {'200': {description: OK}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /api/analytics/patient:
+    get: {tags: [Analytics], summary: 'Patient dashboard: upcoming visits, completed visits per month, latest vitals, record and document counts. Scoped to the signed-in patient.', responses: {'200': {description: OK}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /api/analytics/operations:
+    get: {tags: [Analytics], summary: 'Admin clinic operations: appointments today, unconfirmed bookings, cancellation rate, 14-day load, calendar utilisation per doctor. Contains no patient details.', responses: {'200': {description: OK}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /api/ai/conversations:
+    get: {tags: [AI], summary: 'Patients - saved chats, newest first (title is the first question)', responses: {'200': {description: OK, content: {application/json: {example: {data: [{sessionId: c-lq3x9a1b, title: What is a routine checkup?, messageCount: 2, updatedAt: '2026-11-17T09:20:00.000Z'}]}}}}, '403': {$ref: '#/components/responses/Forbidden'}}}
+  /api/ai/conversations/{sessionId}:
+    delete: {tags: [AI], summary: Patients - delete one of their chats and its messages, parameters: [{name: sessionId, in: path, required: true, schema: {type: string}}], responses: {'204': {description: Deleted}, '404': {$ref: '#/components/responses/NotFound'}}}

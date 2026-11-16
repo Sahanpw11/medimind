@@ -1,0 +1,13 @@
+  console.log
+    status codes: {"201":1,"409":19}
+
+
+PASS tests/concurrency.test.js
+  ✓ 20 simultaneous bookings for one slot => exactly 1x201 and 19x409, 1 reservation (70 ms)
+  ✓ same patient double-submitting is also safe (8 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       2 passed, 2 total
+Snapshots:   0 total
+Time:        0.904 s, estimated 1 s
+Ran all test suites matching /concurrency/i.

@@ -1,0 +1,166 @@
+{
+  "explainVersion": "1",
+  "queryPlanner": {
+    "namespace": "medimind_db.appointments",
+    "indexFilterSet": false,
+    "parsedQuery": {
+      "$and": [
+        {
+          "doctorId": {
+            "$eq": "030000000000000000000007"
+          }
+        },
+        {
+          "startAt": {
+            "$lt": "2026-12-16T22:11:32.189Z"
+          }
+        },
+        {
+          "startAt": {
+            "$gte": "2026-10-17T22:11:32.189Z"
+          }
+        }
+      ]
+    },
+    "queryHash": "47AD2120",
+    "planCacheKey": "93D48DC4",
+    "optimizationTimeMillis": 0,
+    "maxIndexedOrSolutionsReached": false,
+    "maxIndexedAndSolutionsReached": false,
+    "maxScansToExplodeReached": false,
+    "winningPlan": {
+      "stage": "FETCH",
+      "inputStage": {
+        "stage": "IXSCAN",
+        "keyPattern": {
+          "doctorId": 1,
+          "startAt": 1
+        },
+        "indexName": "doctor_schedule",
+        "isMultiKey": false,
+        "multiKeyPaths": {
+          "doctorId": [],
+          "startAt": []
+        },
+        "isUnique": false,
+        "isSparse": false,
+        "isPartial": false,
+        "indexVersion": 2,
+        "direction": "forward",
+        "indexBounds": {
+          "doctorId": [
+            "[ObjectId('030000000000000000000007'), ObjectId('030000000000000000000007')]"
+          ],
+          "startAt": [
+            "[new Date(1792275092189), new Date(1797459092189))"
+          ]
+        }
+      }
+    },
+    "rejectedPlans": []
+  },
+  "executionStats": {
+    "executionSuccess": true,
+    "nReturned": 39,
+    "executionTimeMillis": 0,
+    "totalKeysExamined": 39,
+    "totalDocsExamined": 39,
+    "executionStages": {
+      "stage": "FETCH",
+      "nReturned": 39,
+      "executionTimeMillisEstimate": 0,
+      "works": 40,
+      "advanced": 39,
+      "needTime": 0,
+      "needYield": 0,
+      "saveState": 0,
+      "restoreState": 0,
+      "isEOF": 1,
+      "docsExamined": 39,
+      "alreadyHasObj": 0,
+      "inputStage": {
+        "stage": "IXSCAN",
+        "nReturned": 39,
+        "executionTimeMillisEstimate": 0,
+        "works": 40,
+        "advanced": 39,
+        "needTime": 0,
+        "needYield": 0,
+        "saveState": 0,
+        "restoreState": 0,
+        "isEOF": 1,
+        "keyPattern": {
+          "doctorId": 1,
+          "startAt": 1
+        },
+        "indexName": "doctor_schedule",
+        "isMultiKey": false,
+        "multiKeyPaths": {
+          "doctorId": [],
+          "startAt": []
+        },
+        "isUnique": false,
+        "isSparse": false,
+        "isPartial": false,
+        "indexVersion": 2,
+        "direction": "forward",
+        "indexBounds": {
+          "doctorId": [
+            "[ObjectId('030000000000000000000007'), ObjectId('030000000000000000000007')]"
+          ],
+          "startAt": [
+            "[new Date(1792275092189), new Date(1797459092189))"
+          ]
+        },
+        "keysExamined": 39,
+        "seeks": 1,
+        "dupsTested": 0,
+        "dupsDropped": 0
+      }
+    }
+  },
+  "command": {
+    "find": "appointments",
+    "filter": {
+      "doctorId": "030000000000000000000007",
+      "startAt": {
+        "$gte": "2026-10-17T22:11:32.189Z",
+        "$lt": "2026-12-16T22:11:32.189Z"
+      }
+    },
+    "sort": {
+      "startAt": 1
+    },
+    "$db": "medimind_db"
+  },
+  "serverInfo": {
+    "host": "9880dc7bb3a4",
+    "port": 27017,
+    "version": "7.0.48",
+    "gitVersion": "6937736f0539a5d4c8edb2970255b9369cb385a5"
+  },
+  "serverParameters": {
+    "internalQueryFacetBufferSizeBytes": 104857600,
+    "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+    "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+    "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+    "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+    "internalQueryProhibitBlockingMergeOnMongoS": 0,
+    "internalQueryMaxAddToSetBytes": 104857600,
+    "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+    "internalQueryFrameworkControl": "forceClassicEngine"
+  },
+  "ok": 1,
+  "$clusterTime": {
+    "clusterTime": {
+      "$timestamp": "7708895460806623238"
+    },
+    "signature": {
+      "hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+      "keyId": 0
+    }
+  },
+  "operationTime": {
+    "$timestamp": "7708895460806623238"
+  }
+}

@@ -1,0 +1,24 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.9.6, pytest-8.4.2, pluggy-1.6.0 -- /Users/sahanwijesundara/projects/Medimind/ai-service/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/sahanwijesundara/projects/Medimind/ai-service
+plugins: anyio-4.12.1
+collecting ... collected 15 items
+
+tests/test_api.py::test_health_is_public PASSED                          [  6%]
+tests/test_api.py::test_rejects_missing_or_bad_secret[headers0] PASSED   [ 13%]
+tests/test_api.py::test_rejects_missing_or_bad_secret[headers1] PASSED   [ 20%]
+tests/test_api.py::test_chat_schema_and_grounding PASSED                 [ 26%]
+tests/test_api.py::test_diagnosis_request_is_refused_without_sources PASSED [ 33%]
+tests/test_api.py::test_emergency_escalates PASSED                       [ 40%]
+tests/test_api.py::test_unsupported_question_abstains PASSED             [ 46%]
+tests/test_api.py::test_answer_never_claims_diagnosis PASSED             [ 53%]
+tests/test_api.py::test_chat_validation[body0] PASSED                    [ 60%]
+tests/test_api.py::test_chat_validation[body1] PASSED                    [ 66%]
+tests/test_api.py::test_chat_validation[body2] PASSED                    [ 73%]
+tests/test_api.py::test_chat_validation[body3] PASSED                    [ 80%]
+tests/test_api.py::test_no_show_contract_and_bounds PASSED               [ 86%]
+tests/test_api.py::test_no_show_is_monotonic_in_prior_misses PASSED      [ 93%]
+tests/test_api.py::test_no_show_validation PASSED                        [100%]
+
+============================== 15 passed in 0.24s ==============================

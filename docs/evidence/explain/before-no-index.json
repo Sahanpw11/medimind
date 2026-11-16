@@ -1,0 +1,169 @@
+{
+  "explainVersion": "1",
+  "queryPlanner": {
+    "namespace": "medimind_db.appointments",
+    "indexFilterSet": false,
+    "parsedQuery": {
+      "$and": [
+        {
+          "doctorId": {
+            "$eq": "030000000000000000000007"
+          }
+        },
+        {
+          "startAt": {
+            "$lt": "2026-12-16T22:11:32.189Z"
+          }
+        },
+        {
+          "startAt": {
+            "$gte": "2026-10-17T22:11:32.189Z"
+          }
+        }
+      ]
+    },
+    "queryHash": "47AD2120",
+    "planCacheKey": "4F5C69B2",
+    "optimizationTimeMillis": 0,
+    "maxIndexedOrSolutionsReached": false,
+    "maxIndexedAndSolutionsReached": false,
+    "maxScansToExplodeReached": false,
+    "winningPlan": {
+      "stage": "SORT",
+      "sortPattern": {
+        "startAt": 1
+      },
+      "memLimit": 104857600,
+      "type": "simple",
+      "inputStage": {
+        "stage": "COLLSCAN",
+        "filter": {
+          "$and": [
+            {
+              "doctorId": {
+                "$eq": "030000000000000000000007"
+              }
+            },
+            {
+              "startAt": {
+                "$lt": "2026-12-16T22:11:32.189Z"
+              }
+            },
+            {
+              "startAt": {
+                "$gte": "2026-10-17T22:11:32.189Z"
+              }
+            }
+          ]
+        },
+        "direction": "forward"
+      }
+    },
+    "rejectedPlans": []
+  },
+  "executionStats": {
+    "executionSuccess": true,
+    "nReturned": 39,
+    "executionTimeMillis": 1,
+    "totalKeysExamined": 0,
+    "totalDocsExamined": 2200,
+    "executionStages": {
+      "stage": "SORT",
+      "nReturned": 39,
+      "executionTimeMillisEstimate": 0,
+      "works": 2241,
+      "advanced": 39,
+      "needTime": 2201,
+      "needYield": 0,
+      "saveState": 2,
+      "restoreState": 2,
+      "isEOF": 1,
+      "sortPattern": {
+        "startAt": 1
+      },
+      "memLimit": 104857600,
+      "type": "simple",
+      "totalDataSizeSorted": 8884,
+      "usedDisk": false,
+      "spills": 0,
+      "spilledDataStorageSize": 0,
+      "inputStage": {
+        "stage": "COLLSCAN",
+        "filter": {
+          "$and": [
+            {
+              "doctorId": {
+                "$eq": "030000000000000000000007"
+              }
+            },
+            {
+              "startAt": {
+                "$lt": "2026-12-16T22:11:32.189Z"
+              }
+            },
+            {
+              "startAt": {
+                "$gte": "2026-10-17T22:11:32.189Z"
+              }
+            }
+          ]
+        },
+        "nReturned": 39,
+        "executionTimeMillisEstimate": 0,
+        "works": 2201,
+        "advanced": 39,
+        "needTime": 2161,
+        "needYield": 0,
+        "saveState": 2,
+        "restoreState": 2,
+        "isEOF": 1,
+        "direction": "forward",
+        "docsExamined": 2200
+      }
+    }
+  },
+  "command": {
+    "find": "appointments",
+    "filter": {
+      "doctorId": "030000000000000000000007",
+      "startAt": {
+        "$gte": "2026-10-17T22:11:32.189Z",
+        "$lt": "2026-12-16T22:11:32.189Z"
+      }
+    },
+    "sort": {
+      "startAt": 1
+    },
+    "$db": "medimind_db"
+  },
+  "serverInfo": {
+    "host": "9880dc7bb3a4",
+    "port": 27017,
+    "version": "7.0.48",
+    "gitVersion": "6937736f0539a5d4c8edb2970255b9369cb385a5"
+  },
+  "serverParameters": {
+    "internalQueryFacetBufferSizeBytes": 104857600,
+    "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+    "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+    "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+    "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+    "internalQueryProhibitBlockingMergeOnMongoS": 0,
+    "internalQueryMaxAddToSetBytes": 104857600,
+    "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+    "internalQueryFrameworkControl": "forceClassicEngine"
+  },
+  "ok": 1,
+  "$clusterTime": {
+    "clusterTime": {
+      "$timestamp": "7708895460806623233"
+    },
+    "signature": {
+      "hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+      "keyId": 0
+    }
+  },
+  "operationTime": {
+    "$timestamp": "7708895460806623233"
+  }
+}
