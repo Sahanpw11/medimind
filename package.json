@@ -1,0 +1,31 @@
+{
+  "name": "medimind",
+  "private": true,
+  "version": "0.1.0",
+  "description": "MediMind \u2014 educational healthcare platform (synthetic data only)",
+  "workspaces": [
+    "frontend",
+    "backend",
+    "database"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev -w backend",
+    "dev:web": "npm run dev -w frontend",
+    "dev:ai": "node scripts/run-ai.js",
+    "build": "npm run build -w frontend",
+    "db:setup": "npm run setup -w database",
+    "db:explain": "npm run explain -w database",
+    "test": "npm test -w backend",
+    "test:concurrency": "npm run test:concurrency -w backend",
+    "test:e2e": "playwright test",
+    "setup": "node scripts/setup.js",
+    "start": "concurrently -k -n api,ai,web -c blue,magenta,green \"npm:dev:api\" \"npm:dev:ai\" \"npm:dev:web\""
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "concurrently": "^9.2.5"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
