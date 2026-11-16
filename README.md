@@ -26,6 +26,10 @@ There is nothing to configure: the settings are in the committed `.env` (local d
 
 **If something goes wrong:** `npm run setup` prints what is missing. The most common cause is Docker Desktop not running. Ports used: 5173 (web), 4000 (API), 8000 (AI), 27017 (MongoDB).
 
+## Guides for the presentation and the viva
+
+The full explanation (how it works, how it was built, the lecturer demo and the viva questions) is in [docs/guide/](docs/guide/00-START-HERE.md).
+
 ## Repository layout
 
 ```
@@ -41,7 +45,7 @@ scripts/       setup and start helpers, icon generator
 ## Tests
 
 ```bash
-npm test                          # 65 API and unit tests (needs MongoDB running; uses the medimind_test database)
+npm test                          # 67 API and unit tests (needs MongoDB running; uses the medimind_test database)
 npm run test:concurrency          # 20 simultaneous bookings for one slot
 cd ai-service && .venv/bin/python -m pytest      # 15 AI tests
 npx playwright install chromium && npm run test:e2e   # 40 E2E tests (builds and previews the frontend)
