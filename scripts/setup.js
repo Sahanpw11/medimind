@@ -7,17 +7,19 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 require('dotenv').config({ path: path.join(root, '.env') });
 const win = process.platform === 'win32';
+// Programs are started directly, never through a shell: paths such as C:\Program Files\nodejs\node.exe
+// or a user folder with a space would otherwise be split at the space on Windows.
 
 const step = (n, text) => console.log(`\n[${n}/4] ${text}`);
 const fail = (msg) => { console.error(`\nSetup stopped: ${msg}`); process.exit(1); };
-const run = (cmd, args, opts = {}) => spawnSync(cmd, args, { cwd: root, stdio: 'inherit', shell: win, ...opts });
-const has = (cmd, args = ['--version']) => spawnSync(cmd, args, { stdio: 'ignore', shell: win }).status === 0;
+const run = (cmd, args, opts = {}) => spawnSync(cmd, args, { cwd: root, stdio: 'inherit', ...opts });
+const has = (cmd, args = ['--version']) => spawnSync(cmd, args, { stdio: 'ignore' }).status === 0;
 
 (async () => {
   step(1, 'Checking tools');
   if (Number(process.versions.node.split('.')[0]) < 20) fail(`Node 20 or newer is needed (you have ${process.versions.node}).`);
   if (!has('docker')) fail('Docker is not installed or not on your PATH. Install Docker Desktop, start it, then run this again.');
-  if (spawnSync('docker', ['info'], { stdio: 'ignore', shell: win }).status !== 0) fail('Docker is installed but not running. Start Docker Desktop, wait until it says "running", then run this again.');
+  if (spawnSync('docker', ['info'], { stdio: 'ignore' }).status !== 0) fail('Docker is installed but not running. Start Docker Desktop, wait until it says "running", then run this again.');
   const python = ['python3', 'python', 'py'].find((c) => has(c));
   if (!python) fail('Python 3.9 or newer is needed (python3 / python was not found).');
   console.log(`  Node ${process.versions.node}, Docker running, ${python} found`);
